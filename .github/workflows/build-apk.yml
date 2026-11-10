@@ -28,13 +28,7 @@ jobs:
         run: |
           flutter create --org app.minha --project-name minha --platforms android .
           rm -rf test
-          M=android/app/src/main/AndroidManifest.xml
-          grep -q 'android.permission.INTERNET' $M || sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#&\n    <uses-permission android:name="android.permission.INTERNET"/>#' $M
-          sed -i 's#android:label="minha"#android:label="Minha"#' $M
-          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            cp assets/icon/ic_launcher_$d.png android/app/src/main/res/mipmap-$d/ic_launcher.png
-          done
-          cat $M
+          python3 scripts/patch_android.py
 
       - run: flutter pub get
 
@@ -56,3 +50,37 @@ jobs:
           name: Minha test build ${{ github.run_number }}
           prerelease: true
           files: minha-${{ github.run_number }}.apk
+
+  emulator-test:
+    needs: apk
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: minha-apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run app on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          script: bash scripts/smoke.sh
+      - name: Save screenshots and log to ci-shots branch
+        if: always()
+        run: |
+          mkdir -p /tmp/out && cp -r shots/* /tmp/out/ || true
+          git config user.name "minha-ci"
+          git config user.email "ci@minha.app"
+          git checkout --orphan ci-shots
+          git rm -rf . -q
+          cp -r /tmp/out/* . || true
+          git add -A
+          git commit -m "Emulator run ${{ github.run_number }}" || true
+          git push -f origin ci-shots

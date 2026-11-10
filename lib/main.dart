@@ -13,6 +13,14 @@ import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Show errors on screen instead of a blank grey box, so testers can screenshot them.
+  ErrorWidget.builder = (details) => Material(
+        color: const Color(0xFFFFF4F4),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Text('Something went wrong:\n${details.exceptionAsString()}', style: const TextStyle(color: Color(0xFF8B1A1A), fontSize: 12)),
+        ),
+      );
   await Store.instance.load();
   runApp(const MinhaApp());
 }
