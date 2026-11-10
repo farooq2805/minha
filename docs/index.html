@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minha — The Quran, One Verse a Day</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Amiri+Quran&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --emerald: #00875A;
+      --glow: #2BE08F;
+      --night: #04201A;
+      --gold: #E7C48A;
+      --ink: #1C1C1E;
+      --grey: #8E8E93;
+      --bg: #F4F6F4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    header {
+      background: radial-gradient(circle at 50% 20%, #0A3D30 0%, var(--night) 100%);
+      color: white;
+      text-align: center;
+      padding: 70px 24px 60px;
+    }
+    .logo {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, var(--glow) 0%, var(--emerald) 50%, #00573A 100%);
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 30px rgba(0, 135, 90, 0.4);
+      margin-bottom: 20px;
+    }
+    .logo svg {
+      width: 44px;
+      height: 44px;
+      fill: white;
+    }
+    h1 {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin: 0 0 12px;
+    }
+    .tagline {
+      font-size: 20px;
+      color: #A3D9C9;
+      max-width: 540px;
+      margin: 0 auto 30px;
+    }
+    .cta-group {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+    .btn-primary {
+      background: var(--emerald);
+      color: white;
+      box-shadow: 0 6px 20px rgba(0, 135, 90, 0.35);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.12);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .container {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+    .arabic-preview {
+      font-family: 'Amiri Quran', serif;
+      font-size: 26px;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: white;
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: #E8F5E9;
+      color: var(--emerald);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 {
+      font-size: 18px;
+      margin: 0 0 8px;
+    }
+    .feature-card p {
+      color: #6C6C70;
+      font-size: 14.5px;
+      margin: 0;
+    }
+    footer {
+      border-top: 1px solid rgba(0,0,0,0.08);
+      text-align: center;
+      padding: 36px 24px;
+      color: var(--grey);
+      font-size: 14px;
+    }
+    footer a {
+      color: var(--emerald);
+      text-decoration: none;
+      margin: 0 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>
+    </div>
+    <div class="arabic-preview">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
+    <h1>minha</h1>
+    <p class="tagline">A gift from the Quran, one verse a day. Crafted for peace, mindfulness, and consistency in your deen.</p>
+    <div class="cta-group">
+      <a href="https://github.com/farooq2805/minha/releases" class="btn btn-primary">
+        <span>Download Android APK</span>
+      </a>
+      <a href="privacy.html" class="btn btn-secondary">
+        <span>Privacy Policy</span>
+      </a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="grid">
+      <div class="feature-card">
+        <div class="feature-icon">📖</div>
+        <h3>Reels-Style Quran Feed</h3>
+        <p>A full-screen, vertical scroll experience matching Quranic verses to how your heart feels today, with crystal clear Mishary Alafasy recitations.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🕌</div>
+        <h3>Daily Namaz Tracker</h3>
+        <p>Interactive 5-prayer check-in with streak tracking and dynamic prayer times matching your local mosque with minute adjustments.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🌙</div>
+        <h3>Ramadan & Duas</h3>
+        <p>Live countdowns to Suhoor & Iftar, 30-day fast log, and authentic daily supplications including the traditional Indian iftar dua first.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">✨</div>
+        <h3>AI Companion (Ask Minha)</h3>
+        <p>A warm, conversational companion citing authentic Quran and Hadith verses for what is weighing on your heart. No binding fatwas.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <h3>Beautiful Share Cards</h3>
+        <p>Generate high-resolution story and status cards with Arabic calligraphy and translations to share blessings with family and friends.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>Privacy First & Zero Ads on Verses</h3>
+        <p>Your spiritual journey stays on your device. We never interrupt your Quran reading with advertisements.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Minha. Built by Farooq Syed.</p>
+    <p>
+      <a href="privacy.html">Privacy Policy</a> • 
+      <a href="terms.html">Terms of Service</a> • 
+      <a href="https://github.com/farooq2805/minha">GitHub Repository</a>
+    </p>
+  </footer>
+
+</body>
+</html>
