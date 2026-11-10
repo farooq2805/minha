@@ -43,6 +43,14 @@ jobs:
           name: minha-apk
           path: minha-${{ github.run_number }}.apk
 
+      - name: Publish release for phone download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Minha test build ${{ github.run_number }}
+          prerelease: true
+          files: minha-${{ github.run_number }}.apk
+
       - name: Push APK to apk branch
         run: |
           mkdir -p /tmp/apk && cp minha-${{ github.run_number }}.apk /tmp/apk/minha-latest.apk
@@ -54,14 +62,6 @@ jobs:
           git add minha-latest.apk
           git commit -m "APK build ${{ github.run_number }}"
           git push -f origin apk
-
-      - name: Publish release for phone download
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: build-${{ github.run_number }}
-          name: Minha test build ${{ github.run_number }}
-          prerelease: true
-          files: minha-${{ github.run_number }}.apk
 
   emulator-test:
     needs: apk
