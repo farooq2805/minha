@@ -27,7 +27,6 @@ class _ChatMessage {
   final String? report;
   final String? dua;
   final List<String> verseKeys;
-  final bool isAi;
 }
 
 class _AskScreenState extends State<AskScreen> {
