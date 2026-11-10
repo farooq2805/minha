@@ -79,9 +79,11 @@ jobs:
       - name: Run app on emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
-          target: google_apis
+          api-level: 29
+          target: default
           arch: x86_64
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: bash scripts/smoke.sh
       - name: Save screenshots and log to ci-shots branch
@@ -93,6 +95,7 @@ jobs:
           git checkout --orphan ci-shots
           git rm -rf . -q
           cp -r /tmp/out/* . || true
+          rm -f minha-*.apk
           git add -A
           git commit -m "Emulator run ${{ github.run_number }}" || true
           git push -f origin ci-shots
