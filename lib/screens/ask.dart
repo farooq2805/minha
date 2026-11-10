@@ -21,7 +21,6 @@ class _ChatMessage {
     this.report,
     this.dua,
     this.verseKeys = const [],
-    this.isAi = true,
   });
   final String question;
   final String answer;

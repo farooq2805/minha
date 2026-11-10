@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' show FontFeature;
 
 import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
@@ -149,9 +148,9 @@ class _RamadanScreenState extends State<RamadanScreen> {
               Text('Times for ${s.cityName} (${s.calcMethod.toUpperCase()}, ${s.madhab.toUpperCase()} Asr). Follow your local mosque announcement.',
                   style: ui(12, color: C.grey, height: 1.45)),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
