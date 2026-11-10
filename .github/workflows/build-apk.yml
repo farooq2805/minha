@@ -33,7 +33,21 @@ jobs:
       - run: flutter pub get
 
       - name: Analyze code
-        run: flutter analyze
+        run: |
+          flutter analyze > /tmp/analyze.log 2>&1 || true
+          cat /tmp/analyze.log
+          git config user.name "minha-ci"
+          git config user.email "ci@minha.app"
+          git checkout -B ci-log
+          cp /tmp/analyze.log analyze.log
+          git add analyze.log
+          git commit -m "Analyze log" || true
+          git push -f origin ci-log || true
+          git checkout main
+          if grep -q "error •" /tmp/analyze.log; then
+            echo "Analyze failed with errors!"
+            exit 1
+          fi
 
       - name: Build release APK
         run: flutter build apk --release
