@@ -8,15 +8,7 @@ import '../store.dart';
 import '../theme.dart';
 import 'quran.dart';
 
-/// Test build uses Mumbai. Production: device location with permission.
-const _city = 'Mumbai';
-final _coords = Coordinates(19.0760, 72.8777);
-
-PrayerTimes _times(DateTime day) {
-  final params = CalculationMethod.karachi.getParameters();
-  params.madhab = Madhab.hanafi;
-  return PrayerTimes(_coords, DateComponents.from(day), params);
-}
+PrayerTimes _times(DateTime day) => Store.instance.getPrayerTimes(day);
 
 String fmtTime(DateTime t) {
   final l = t.toLocal();
@@ -55,31 +47,31 @@ class _RamadanScreenState extends State<RamadanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final t = _times(now);
-    final suhoor = t.fajr.toLocal();
-    final iftar = t.maghrib.toLocal();
-    final beforeIftar = now.isBefore(iftar);
-    final target = beforeIftar ? iftar : _times(now.add(const Duration(days: 1))).fajr.toLocal();
-    final left = target.difference(now);
-    final start = DateTime(2027, 2, 8);
-    final day = now.difference(start).inDays + 1;
-    final inRamadan = day >= 1 && day <= 30;
+    return ListenableBuilder(
+      listenable: Store.instance,
+      builder: (context, _) {
+        final s = Store.instance;
+        final t = _times(now);
+        final suhoor = t.fajr.toLocal();
+        final iftar = t.maghrib.toLocal();
+        final beforeIftar = now.isBefore(iftar);
+        final target = beforeIftar ? iftar : _times(now.add(const Duration(days: 1))).fajr.toLocal();
+        final left = target.difference(now);
+        final start = DateTime(2027, 2, 8);
+        final day = now.difference(start).inDays + 1;
+        final inRamadan = day >= 1 && day <= 30;
+        final kept = s.fasts.where((f) => f == '1').length;
 
-    return Scaffold(
-      backgroundColor: C.grouped,
-      appBar: AppBar(backgroundColor: C.grouped, surfaceTintColor: Colors.transparent),
-      body: ListenableBuilder(
-        listenable: Store.instance,
-        builder: (context, _) {
-          final s = Store.instance;
-          final kept = s.fasts.where((f) => f == '1').length;
-          return ListView(
+        return Scaffold(
+          backgroundColor: C.grouped,
+          appBar: AppBar(backgroundColor: C.grouped, surfaceTintColor: Colors.transparent),
+          body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 4),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(inRamadan ? 'Day $day of 30 · $_city' : 'Preview · $_city', style: ui(13, color: C.grey, weight: FontWeight.w600)),
+                  Text(inRamadan ? 'Day $day of 30 · ${s.cityName}' : 'Preview · ${s.cityName}', style: ui(13, color: C.grey, weight: FontWeight.w600)),
                   Text('Ramadan', style: largeTitle()),
                 ]),
               ),
@@ -110,7 +102,7 @@ class _RamadanScreenState extends State<RamadanScreen> {
                       Expanded(child: _timeBox('Iftar (Maghrib)', fmtTime(iftar))),
                     ]),
                     const SizedBox(height: 12),
-                    Text('Open the iftar dua', style: ui(13, color: C.gold, weight: FontWeight.w600)),
+                    Text('Open the iftar dua →', style: ui(13, color: C.gold, weight: FontWeight.w600)),
                   ]),
                 ),
               ),
@@ -153,29 +145,8 @@ class _RamadanScreenState extends State<RamadanScreen> {
                   _tile(Icons.volunteer_activism_outlined, 'Zakat and sadaqah', 'Calculator coming next', null),
                 ],
               ),
-              const SizedBox(height: 12),
-              Group(
-                padding: const EdgeInsets.all(12),
-                child: Row(children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      gradient: const LinearGradient(colors: [Color(0xFFF6D7B0), Color(0xFFE3A869)]),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Iftar partner · Sponsored', style: ui(11, color: const Color(0xFF8E8E93), weight: FontWeight.w600)),
-                      Text('Sponsor slot (test build)', style: ui(15, weight: FontWeight.w600)),
-                    ]),
-                  ),
-                ]),
-              ),
               const SizedBox(height: 14),
-              Text('Times: University of Islamic Sciences, Karachi method, Hanafi Asr. Always follow your local mosque announcement.',
+              Text('Times for ${s.cityName} (${s.calcMethod.toUpperCase()}, ${s.madhab.toUpperCase()} Asr). Follow your local mosque announcement.',
                   style: ui(12, color: C.grey, height: 1.45)),
             ],
           );
@@ -223,12 +194,34 @@ class Dua {
 }
 
 const duas = [
-  Dua('Iftar', 'ذَهَبَ ٱلظَّمَأُ وَٱبْتَلَّتِ ٱلْعُرُوقُ وَثَبَتَ ٱلْأَجْرُ إِنْ شَآءَ ٱللَّهُ', "Dhahaba al-ẓama'u wabtallatil-'urūqu wa thabatal-ajru in shā' Allāh",
-      'The thirst is gone, the veins are moist, and the reward is certain, if Allah wills.', 'Sunan Abi Dawud 2357'),
-  Dua('Allāhumma laka ṣumtu', 'ٱللَّهُمَّ لَكَ صُمْتُ وَعَلَىٰ رِزْقِكَ أَفْطَرْتُ', "Allāhumma laka ṣumtu wa 'alā rizqika afṭartu",
-      'O Allah, for You I have fasted and with Your provision I break my fast.', 'Sunan Abi Dawud 2358 (chain graded weak by many scholars)'),
-  Dua('Laylat al-Qadr', 'ٱللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ ٱلْعَفْوَ فَٱعْفُ عَنِّي', "Allāhumma innaka 'afuwwun tuḥibbul-'afwa fa'fu 'annī",
-      'O Allah, You are pardoning and You love to pardon, so pardon me.', "Jami' at-Tirmidhi 3513"),
+  Dua(
+    'Iftar (India & South Asia)',
+    'اللَّهُمَّ إِنِّي لَكَ صُمْتُ وَبِكَ آمَنْتُ وَعَلَيْكَ تَوَكَّلْتُ وَعَلَى رِزْقِكَ أَفْطَرْتُ',
+    "Allāhumma innī laka ṣumtu wa bika āmantu wa ‘alayka tawakkaltu wa ‘alā rizqika afṭartu",
+    'O Allah, for You I have fasted, in You I believe, upon You I rely, and with Your provision I break my fast.',
+    'Commonly recited across India and South Asia',
+  ),
+  Dua(
+    'After Iftar (Sunnah)',
+    'ذَهَبَ ٱلظَّمَأُ وَٱبْتَلَّتِ ٱلْعُرُوقُ وَثَبَتَ ٱلْأَجْرُ إِنْ شَآءَ ٱللَّهُ',
+    "Dhahaba al-ẓama'u wabtallatil-'urūqu wa thabatal-ajru in shā' Allāh",
+    'The thirst is gone, the veins are moist, and the reward is certain, if Allah wills.',
+    'Sunan Abi Dawud 2357',
+  ),
+  Dua(
+    'Allāhumma laka ṣumtu',
+    'اللَّهُمَّ لَكَ صُمْتُ وَعَلَى رِزْقِكَ أَفْطَرْتُ',
+    "Allāhumma laka ṣumtu wa 'alā rizqika afṭartu",
+    'O Allah, for You I have fasted and with Your provision I break my fast.',
+    'Sunan Abi Dawud 2358',
+  ),
+  Dua(
+    'Laylat al-Qadr',
+    'ٱللَّهُمَّ إِنَّكَ عَفُوٌّ تُحِبُّ ٱلْعَفْوَ فَٱعْفُ عَنِّي',
+    "Allāhumma innaka 'afuwwun tuḥibbul-'afwa fa'fu 'annī",
+    'O Allah, You are pardoning and You love to pardon, so pardon me.',
+    "Jami' at-Tirmidhi 3513",
+  ),
 ];
 
 class IftarScreen extends StatefulWidget {
@@ -239,12 +232,15 @@ class IftarScreen extends StatefulWidget {
 }
 
 class _IftarScreenState extends State<IftarScreen> {
-  late int i = widget.startOnQadr ? 2 : 0;
+  late int i = widget.startOnQadr ? 3 : 0;
 
   @override
   Widget build(BuildContext context) {
+    final s = Store.instance;
     final iftar = _times(DateTime.now()).maghrib.toLocal();
     final d = duas[i];
+    final isQadr = d.tab.contains('Qadr');
+
     return Scaffold(
       backgroundColor: C.night,
       body: Stack(children: [
@@ -261,31 +257,32 @@ class _IftarScreenState extends State<IftarScreen> {
                   icon: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
                 ),
                 const Spacer(),
-                Text('Maghrib · ${fmtTime(iftar)} · $_city', style: ui(13, color: Colors.white70)),
+                Text('Maghrib · ${fmtTime(iftar)} · ${s.cityName}', style: ui(13, color: Colors.white70)),
                 const Spacer(),
                 const SizedBox(width: 48),
               ]),
-              const SizedBox(height: 24),
-              const Icon(Icons.nightlight_round, color: C.gold, size: 54),
-              const SizedBox(height: 10),
-              Text(i == 2 ? 'The last ten nights' : 'Time to break your fast', textAlign: TextAlign.center, style: serif(32, color: Colors.white, weight: FontWeight.w500, height: 1.15)),
+              const SizedBox(height: 20),
+              const Icon(Icons.nightlight_round, color: C.gold, size: 50),
+              const SizedBox(height: 8),
+              Text(isQadr ? 'The last ten nights' : 'Time to break your fast',
+                  textAlign: TextAlign.center, style: serif(30, color: Colors.white, weight: FontWeight.w500, height: 1.15)),
               const SizedBox(height: 6),
-              Text(i == 2 ? 'Recite often on the odd nights' : 'Say this as you open your fast', style: ui(14, color: Colors.white60)),
-              const SizedBox(height: 24),
+              Text(isQadr ? 'Recite often on the odd nights' : 'Say this as you open your fast', style: ui(14, color: Colors.white60)),
+              const SizedBox(height: 18),
               Container(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 18),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(.1),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(color: Colors.white.withOpacity(.2), width: .5),
                 ),
                 child: Column(children: [
-                  Text(d.arabic, textAlign: TextAlign.center, textDirection: TextDirection.rtl, style: arabic(28, color: Colors.white)),
+                  Text(d.arabic, textAlign: TextAlign.center, textDirection: TextDirection.rtl, style: arabic(26, color: Colors.white)),
+                  const SizedBox(height: 12),
+                  Text(d.transliteration, textAlign: TextAlign.center, style: ui(14.5, color: C.gold, height: 1.5).copyWith(fontStyle: FontStyle.italic)),
                   const SizedBox(height: 10),
-                  Text(d.transliteration, textAlign: TextAlign.center, style: ui(15, color: C.gold, height: 1.5).copyWith(fontStyle: FontStyle.italic)),
-                  const SizedBox(height: 10),
-                  Text(d.meaning, textAlign: TextAlign.center, style: serif(18, color: Colors.white.withOpacity(.9), height: 1.45)),
-                  const SizedBox(height: 10),
+                  Text(d.meaning, textAlign: TextAlign.center, style: serif(16.5, color: Colors.white.withOpacity(.92), height: 1.45)),
+                  const SizedBox(height: 8),
                   Text(d.source, textAlign: TextAlign.center, style: ui(12, color: Colors.white54)),
                 ]),
               ),
@@ -301,14 +298,14 @@ class _IftarScreenState extends State<IftarScreen> {
                     backgroundColor: Colors.white.withOpacity(.1),
                     side: BorderSide.none,
                     shape: const StadiumBorder(),
-                    labelStyle: ui(13, weight: FontWeight.w600, color: k == i ? C.night : Colors.white70),
+                    labelStyle: ui(12.5, weight: FontWeight.w600, color: k == i ? C.night : Colors.white70),
                   ),
               ]),
               const Spacer(),
               PrimaryButton(
-                label: i == 2 ? 'Done' : "I've opened my fast",
+                label: isQadr ? 'Done' : "I've opened my fast",
                 onTap: () {
-                  if (i != 2) {
+                  if (!isQadr) {
                     final start = DateTime(2027, 2, 8);
                     final day = DateTime.now().difference(start).inDays;
                     if (day >= 0 && day < 30 && Store.instance.fasts[day] != '1') Store.instance.toggleFast(day);

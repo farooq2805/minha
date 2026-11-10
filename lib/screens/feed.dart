@@ -87,6 +87,14 @@ class _TopBar extends StatelessWidget {
               ]),
             ),
             const Spacer(),
+            if (s.showName && s.name.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: _Glass(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Text('Salam, ${s.name}', style: ui(12.5, color: Colors.white, weight: FontWeight.w600)),
+                ),
+              ),
             _Glass(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(mainAxisSize: MainAxisSize.min, children: [

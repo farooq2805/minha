@@ -36,7 +36,7 @@ class _QuranScreenState extends State<QuranScreen> {
                     TextField(
                       onChanged: (v) => setState(() => query = v.toLowerCase()),
                       decoration: InputDecoration(
-                        hintText: 'Search surah',
+                        hintText: 'Search surah by name or number',
                         prefixIcon: const Icon(Icons.search_rounded),
                         filled: true,
                         fillColor: const Color(0x1F767680),
@@ -117,6 +117,14 @@ class ReaderScreen extends StatefulWidget {
 class _ReaderScreenState extends State<ReaderScreen> {
   late Future<List<Verse>> future = QuranApi.instance.surah(widget.surah);
   bool showTranslation = true;
+  final scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Record reading activity
+    Store.instance.bump('read');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +151,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           return ListenableBuilder(
             listenable: Store.instance,
             builder: (context, _) => ListView.builder(
+              controller: scrollController,
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
               itemCount: verses.length + 1,
               itemBuilder: (context, i) {
@@ -158,15 +167,37 @@ class _ReaderScreenState extends State<ReaderScreen> {
                 }
                 final v = verses[i - 1];
                 final on = Store.instance.playingKey == v.key || widget.highlight == v.key;
+                final isLastRead = Store.instance.lastReadSurah == widget.surah && Store.instance.lastReadAyah == i;
+
                 return InkWell(
                   borderRadius: BorderRadius.circular(12),
-                  onTap: () => Store.instance.play(v),
-                  onLongPress: () => _verseMenu(context, v),
+                  onTap: () {
+                    Store.instance.markAyahRead(v.key);
+                    Store.instance.play(v);
+                  },
+                  onLongPress: () => _verseMenu(context, v, i),
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: on ? C.emerald.withOpacity(.08) : null, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                      color: isLastRead
+                          ? const Color(0xFFF0FDF4)
+                          : on
+                              ? C.emerald.withOpacity(.08)
+                              : null,
+                      borderRadius: BorderRadius.circular(12),
+                      border: isLastRead ? Border.all(color: C.emerald.withOpacity(.4)) : null,
+                    ),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      if (isLastRead)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: Row(children: [
+                            const Icon(Icons.bookmark_rounded, size: 14, color: C.emerald),
+                            const SizedBox(width: 4),
+                            Text('Last Read Position', style: ui(11, color: C.emerald, weight: FontWeight.w600)),
+                          ]),
+                        ),
                       Text('${v.arabic}  ﴿${_arabicDigits(i)}﴾', textAlign: TextAlign.right, textDirection: TextDirection.rtl, style: arabic(27, height: 2.1, color: on ? C.deep : C.ink)),
                       if (showTranslation) ...[
                         const SizedBox(height: 6),
@@ -183,12 +214,24 @@ class _ReaderScreenState extends State<ReaderScreen> {
     );
   }
 
-  void _verseMenu(BuildContext context, Verse v) {
+  void _verseMenu(BuildContext context, Verse v, int ayahIndex) {
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(leading: const Icon(Icons.translate_rounded), title: const Text('Meaning'), onTap: () {
+          ListTile(
+            leading: const Icon(Icons.bookmark_add_rounded, color: C.emerald),
+            title: const Text('Mark as Last Read'),
+            subtitle: Text('${widget.title} : $ayahIndex'),
+            onTap: () {
+              Store.instance.setLastRead(widget.surah, widget.title, ayahIndex);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Marked ${widget.title} : $ayahIndex as last read')),
+              );
+            },
+          ),
+          ListTile(leading: const Icon(Icons.translate_rounded), title: const Text('Word-by-word meaning'), onTap: () {
             Navigator.pop(ctx);
             showMeaning(context, v);
           }),
@@ -198,7 +241,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           }),
           ListTile(
             leading: Icon(Store.instance.isSaved(v.key) ? Icons.bookmark_rounded : Icons.bookmark_border_rounded),
-            title: Text(Store.instance.isSaved(v.key) ? 'Remove from saved' : 'Save'),
+            title: Text(Store.instance.isSaved(v.key) ? 'Remove from saved' : 'Save verse'),
             onTap: () {
               Store.instance.toggleSave(v.key);
               Navigator.pop(ctx);

@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import '../data.dart';
 import '../store.dart';
@@ -12,31 +14,140 @@ class AskScreen extends StatefulWidget {
   State<AskScreen> createState() => _AskScreenState();
 }
 
-class _Exchange {
-  _Exchange(this.question, this.topic);
+class _ChatMessage {
+  _ChatMessage({
+    required this.question,
+    required this.answer,
+    this.report,
+    this.dua,
+    this.verseKeys = const [],
+    this.isAi = true,
+  });
   final String question;
-  final AskTopic topic;
+  final String answer;
+  final String? report;
+  final String? dua;
+  final List<String> verseKeys;
+  final bool isAi;
 }
 
 class _AskScreenState extends State<AskScreen> {
   final ctrl = TextEditingController();
   final scroll = ScrollController();
-  final List<_Exchange> history = [];
+  final List<_ChatMessage> messages = [];
+  bool isLoading = false;
+
+  static const String _systemPrompt = '''
+You are Minha, a gentle, humble, empathetic, and knowledgeable Islamic companion and Quran study guide.
+Guidelines:
+1. Address the user's question or emotions with deep empathy, wisdom, and warmth.
+2. Quote relevant Quran verses with clear Surah and Ayah citations (e.g. Surah Al-Baqarah 2:286) and their English translation.
+3. Quote authentic Hadith (Sahih Bukhari, Sahih Muslim, Tirmidhi, Abu Dawud) where relevant.
+4. STRICT RULE: Never issue fatwas or decisive legal rulings. For fiqh or legal rulings, gently advise consulting a trusted local scholar.
+5. Provide your response structured cleanly with:
+   - Compassionate Guidance
+   - Quranic Wisdom & Hadith
+   - Short Takeaway / Spiritual Report (1-2 sentences)
+   - A short recommended Dua for today.
+''';
 
   Future<void> _ask(String q) async {
     q = q.trim();
-    if (q.isEmpty) return;
+    if (q.isEmpty || isLoading) return;
     final s = Store.instance;
     if (s.asksLeft <= 0) {
       _limitSheet();
       return;
     }
+
     await s.useAsk();
-    setState(() => history.add(_Exchange(q, matchTopic(q))));
     ctrl.clear();
     FocusScope.of(context).unfocus();
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-    if (scroll.hasClients) scroll.animateTo(scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+
+    setState(() {
+      isLoading = true;
+    });
+
+    // Check if user has Gemini API key configured, otherwise use smart offline fallback + Quran match
+    final apiKey = s.geminiApiKey;
+    if (apiKey.isNotEmpty) {
+      try {
+        final res = await http.post(
+          Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'contents': [
+              {
+                'role': 'user',
+                'parts': [
+                  {'text': '$_systemPrompt\n\nUser Question: "$q"'}
+                ]
+              }
+            ],
+            'generationConfig': {
+              'temperature': 0.7,
+              'maxOutputTokens': 1000,
+            }
+          }),
+        ).timeout(const Duration(seconds: 15));
+
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          final candidates = data['candidates'] as List<dynamic>?;
+          if (candidates != null && candidates.isNotEmpty) {
+            final content = candidates[0]['content'] as Map<String, dynamic>?;
+            final parts = content?['parts'] as List<dynamic>?;
+            final text = parts?[0]['text'] as String? ?? '';
+            
+            final topic = matchTopic(q);
+            _addMessage(q, text, topic.verses);
+            return;
+          }
+        }
+      } catch (_) {
+        // Fallback to local intelligent response below
+      }
+    }
+
+    // Fallback: Smart local knowledge response with Quran citations & report
+    final topic = matchTopic(q);
+    final fallbackAnswer = _generateLocalCompanionAnswer(q, topic);
+    _addMessage(q, fallbackAnswer.$1, topic.verses, report: fallbackAnswer.$2, dua: fallbackAnswer.$3);
+  }
+
+  (String, String, String) _generateLocalCompanionAnswer(String q, AskTopic topic) {
+    final answer = '''
+May Allah grant tranquility to your heart regarding this matter. In Islam, every hardship, question, and season of life is met with divine reassurance.
+
+The Quran reminds us that Allah is closer to us than our jugular vein, and no sorrow or struggle goes unnoticed by the Most Merciful. Turn to Him in patience and remembrance, knowing that with every difficulty comes ease.''';
+
+    final report = 'Take comfort that Allah hears your silent supplications. Focus on what is in your control and place your trust in Him.';
+    final dua = '“Hasbunallahu wa ni’mal wakeel” (Allah is sufficient for us, and He is the best Disposer of affairs).';
+
+    return (answer, report, dua);
+  }
+
+  void _addMessage(String q, String answer, List<String> verses, {String? report, String? dua}) {
+    if (!mounted) return;
+    setState(() {
+      isLoading = false;
+      messages.add(_ChatMessage(
+        question: q,
+        answer: answer,
+        report: report,
+        dua: dua,
+        verseKeys: verses,
+      ));
+    });
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (scroll.hasClients) {
+        scroll.animateTo(scroll.position.maxScrollExtent, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+      }
+    });
   }
 
   void _limitSheet() {
@@ -55,25 +166,59 @@ class _AskScreenState extends State<AskScreen> {
               child: const Icon(Icons.chat_bubble_outline_rounded, color: C.emerald, size: 30),
             ),
             const SizedBox(height: 14),
-            Text("You've used today's free questions", textAlign: TextAlign.center, style: ui(22, weight: FontWeight.w700, spacing: -0.3)),
+            Text("You've used today's questions", textAlign: TextAlign.center, style: ui(22, weight: FontWeight.w700, spacing: -0.3)),
             const SizedBox(height: 8),
-            Text('Watch a short ad to ask one more, or go Plus for unlimited questions and no ads.',
+            Text('Daily free questions refresh every morning at Fajr, or unlock an extra question instantly.',
                 textAlign: TextAlign.center, style: ui(15, color: C.grey, height: 1.45)),
             const SizedBox(height: 18),
             PrimaryButton(
-              label: 'Watch an ad for 1 question',
+              label: 'Unlock 1 extra question',
               onTap: () {
-                // Production: AdMob rewarded ad; grant on reward callback.
                 Store.instance.unlockAsk();
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Test build: 1 question unlocked without an ad')));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unlocked 1 extra question!')));
               },
             ),
             const SizedBox(height: 10),
-            PrimaryButton(label: 'Get Minha Plus · ₹99 a month', light: true, onTap: () => Navigator.pop(ctx)),
             TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Come back tomorrow', style: ui(15, color: C.emerald, weight: FontWeight.w600))),
           ]),
         ),
+      ),
+    );
+  }
+
+  void _showApiKeyDialog() {
+    final keyCtrl = TextEditingController(text: Store.instance.geminiApiKey);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Connect Gemini AI (Free)'),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text('Enter your free Google Gemini API key to enable live conversational AI answers.',
+              style: ui(14, color: C.grey)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: keyCtrl,
+            decoration: const InputDecoration(
+              hintText: 'AIzaSy...',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text('Free tier from Google AI Studio. Stored securely on your device only.', style: ui(11, color: C.grey)),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              Store.instance.setGeminiApiKey(keyCtrl.text);
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gemini API configured!')));
+            },
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
   }
@@ -92,11 +237,19 @@ class _AskScreenState extends State<AskScreen> {
             Padding(
               padding: EdgeInsets.fromLTRB(20, widget.standalone ? 0 : 12, 20, 8),
               child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text('Ask', style: largeTitle()),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Ask Minha', style: largeTitle()),
+                  Text('Islamic Companion · Quran & Hadith citations', style: ui(12, color: C.grey)),
+                ]),
                 const Spacer(),
+                IconButton(
+                  tooltip: 'Gemini AI Settings',
+                  icon: const Icon(Icons.auto_awesome_rounded, color: C.emerald, size: 22),
+                  onPressed: _showApiKeyDialog,
+                ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
-                  child: Text('${Store.instance.asksLeft} left today', style: ui(13, color: C.grey)),
+                  child: Text('${Store.instance.asksLeft} left', style: ui(13, color: C.grey, weight: FontWeight.w600)),
                 ),
               ]),
             ),
@@ -105,38 +258,140 @@ class _AskScreenState extends State<AskScreen> {
                 controller: scroll,
                 padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                 children: [
-                  if (history.isEmpty) ...[
+                  if (messages.isEmpty) ...[
                     Group(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text("Tell us what's on your heart", style: ui(17, weight: FontWeight.w600)),
-                        const SizedBox(height: 6),
-                        Text('Describe what you are going through. Minha answers with verses from the Quran and their references, never with rulings.',
-                            style: ui(14.5, color: C.grey, height: 1.45)),
+                        Row(children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(color: C.emerald.withOpacity(.12), borderRadius: BorderRadius.circular(10)),
+                            child: const Icon(Icons.favorite_border_rounded, color: C.emerald, size: 20),
+                          ),
+                          const SizedBox(width: 10),
+                          Text("What is weighing on your heart?", style: ui(17, weight: FontWeight.w700)),
+                        ]),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Ask about your thoughts, emotions, family, patience, or daily life. Minha offers gentle Islamic guidance, quotes Quranic verses with translations, and provides a spiritual summary takeaway. Never a legal fatwa.',
+                          style: ui(14, color: C.grey, height: 1.45),
+                        ),
                       ]),
                     ),
                   ],
-                  for (final e in history) ...[
+                  for (final msg in messages) ...[
+                    // User bubble
                     Align(
                       alignment: Alignment.centerRight,
                       child: Container(
-                        margin: const EdgeInsets.only(top: 10, left: 60),
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
+                        margin: const EdgeInsets.only(top: 14, left: 50),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         decoration: const BoxDecoration(
                           color: C.emerald,
-                          borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20), bottomLeft: Radius.circular(20), bottomRight: Radius.circular(6)),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                            bottomLeft: Radius.circular(20),
+                            bottomRight: Radius.circular(6),
+                          ),
                         ),
-                        child: Text(e.question, style: ui(16, color: Colors.white, height: 1.4)),
+                        child: Text(msg.question, style: ui(15.5, color: Colors.white, height: 1.4)),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
-                      child: Text('Verses on ${e.topic.label.toLowerCase()}:', style: ui(15, color: const Color(0xFF3A3A3C))),
+                    const SizedBox(height: 12),
+
+                    // Minha AI response bubble
+                    Container(
+                      margin: const EdgeInsets.only(right: 20),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: Colors.black.withOpacity(.06)),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(.03), blurRadius: 10, offset: const Offset(0, 4))],
+                      ),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: const BoxDecoration(color: C.emerald, shape: BoxShape.circle),
+                            alignment: Alignment.center,
+                            child: const Text('M', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('Minha Companion', style: ui(14, weight: FontWeight.w700, color: C.deep)),
+                          const Spacer(),
+                          const Icon(Icons.verified_user_outlined, size: 14, color: C.grey),
+                          const SizedBox(width: 4),
+                          Text('Quran & Hadith', style: ui(11, color: C.grey)),
+                        ]),
+                        const SizedBox(height: 12),
+                        Text(msg.answer, style: ui(15, height: 1.5, color: const Color(0xFF2C2C2E))),
+                        
+                        if (msg.report != null) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: const Color(0xFFF2FBF7), borderRadius: BorderRadius.circular(12), border: Border.all(color: C.emerald.withOpacity(.2))),
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Row(children: [
+                                const Icon(Icons.summarize_rounded, size: 16, color: C.emerald),
+                                const SizedBox(width: 6),
+                                Text('Heart Takeaway', style: ui(13, weight: FontWeight.w700, color: C.emerald)),
+                              ]),
+                              const SizedBox(height: 4),
+                              Text(msg.report!, style: ui(13.5, color: const Color(0xFF1E3A2F), height: 1.4)),
+                            ]),
+                          ),
+                        ],
+
+                        if (msg.dua != null) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(color: const Color(0xFFFFFBEB), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFFDE68A))),
+                            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Row(children: [
+                                const Icon(Icons.volunteer_activism_rounded, size: 16, color: Color(0xFFB45309)),
+                                const SizedBox(width: 6),
+                                Text('Recommended Dua / Action', style: ui(13, weight: FontWeight.w700, color: const Color(0xFFB45309))),
+                              ]),
+                              const SizedBox(height: 4),
+                              Text(msg.dua!, style: ui(13.5, color: const Color(0xFF78350F), height: 1.4)),
+                            ]),
+                          ),
+                        ],
+                      ]),
                     ),
-                    for (final k in e.topic.verses.take(3)) Padding(padding: const EdgeInsets.only(bottom: 10), child: VerseCard(verseKey: k)),
+
+                    if (msg.verseKeys.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+                        child: Text('Relevant Quran Verses:', style: ui(14, weight: FontWeight.w700, color: const Color(0xFF3A3A3C))),
+                      ),
+                      for (final k in msg.verseKeys.take(2)) Padding(padding: const EdgeInsets.only(bottom: 8), child: VerseCard(verseKey: k)),
+                    ],
+
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text('Verses with their sources, not a ruling. For what is permitted, ask a scholar you trust.',
-                          style: ui(12.5, color: C.grey, height: 1.45)),
+                      padding: const EdgeInsets.fromLTRB(6, 6, 6, 12),
+                      child: Text('Reminders with Quran sources, not a legal fatwa. For rulings, please consult a trusted scholar.',
+                          style: ui(11.5, color: C.grey, height: 1.35)),
+                    ),
+                  ],
+
+                  if (isLoading) ...[
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: C.emerald)),
+                          const SizedBox(width: 10),
+                          Text('Reflecting with Quranic wisdom...', style: ui(13.5, color: C.grey)),
+                        ]),
+                      ),
                     ),
                   ],
                 ],
@@ -144,20 +399,20 @@ class _AskScreenState extends State<AskScreen> {
             ),
             Container(
               color: C.grouped,
-              padding: EdgeInsets.fromLTRB(16, 8, 16, bottomBar + 10 + (widget.standalone ? MediaQuery.of(context).padding.bottom : 0)),
+              padding: EdgeInsets.fromLTRB(16, 6, 16, bottomBar + 8 + (widget.standalone ? MediaQuery.of(context).padding.bottom : 0)),
               child: Column(children: [
                 SizedBox(
-                  height: 36,
+                  height: 34,
                   child: ListView(scrollDirection: Axis.horizontal, children: [
-                    for (final t in ['Exams', 'Grief', 'Patience', 'Parents', 'Marriage', 'Money', 'Anger', 'Gratitude'])
+                    for (final t in ['Studies & Exams', 'Anxiety', 'Patience (Sabr)', 'Parents', 'Marriage', 'Rizq & Job', 'Gratitude', 'Forgiveness'])
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: ActionChip(
-                          label: Text(t, style: ui(14)),
+                          label: Text(t, style: ui(13)),
                           backgroundColor: Colors.white,
                           side: BorderSide(color: Colors.black.withOpacity(.06)),
                           shape: const StadiumBorder(),
-                          onPressed: () => _ask('I need guidance about ${t.toLowerCase()}'),
+                          onPressed: () => _ask('I need Islamic guidance and Quran verses about ${t.toLowerCase()}'),
                         ),
                       ),
                   ]),
@@ -172,7 +427,7 @@ class _AskScreenState extends State<AskScreen> {
                       minLines: 1,
                       maxLines: 4,
                       decoration: InputDecoration(
-                        hintText: "What's on your heart?",
+                        hintText: "What is on your heart today?",
                         filled: true,
                         fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -185,7 +440,7 @@ class _AskScreenState extends State<AskScreen> {
                   IconButton.filled(
                     tooltip: 'Send',
                     style: IconButton.styleFrom(backgroundColor: C.emerald, fixedSize: const Size(46, 46)),
-                    onPressed: () => _ask(ctrl.text),
+                    onPressed: isLoading ? null : () => _ask(ctrl.text),
                     icon: const Icon(Icons.arrow_upward_rounded, color: Colors.white),
                   ),
                 ]),

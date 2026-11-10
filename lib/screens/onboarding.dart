@@ -12,29 +12,46 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
   String mood = 'Anxious';
+  final nameCtrl = TextEditingController(text: 'Farooq');
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: C.grouped,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 48),
-              Center(child: AppIcon(size: 96)),
-              const SizedBox(height: 22),
-              Center(child: Text('minha', style: serif(46, weight: FontWeight.w500, height: 1))),
-              const SizedBox(height: 8),
+              const SizedBox(height: 36),
+              Center(child: AppIcon(size: 88)),
+              const SizedBox(height: 18),
+              Center(child: Text('minha', style: serif(44, weight: FontWeight.w500, height: 1))),
+              const SizedBox(height: 6),
               Center(
                 child: Text('A gift from the Quran, one verse a day.',
-                    textAlign: TextAlign.center, style: serif(20, color: const Color(0xFF3A3A3C))),
+                    textAlign: TextAlign.center, style: serif(18, color: const Color(0xFF3A3A3C))),
               ),
-              const SizedBox(height: 44),
-              Text('How is your heart today?', style: ui(20, weight: FontWeight.w600, spacing: -0.2)),
-              const SizedBox(height: 12),
+              const SizedBox(height: 28),
+              Text('What should Minha call you?', style: ui(18, weight: FontWeight.w600, spacing: -0.2)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: nameCtrl,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  hintText: 'Your name',
+                  filled: true,
+                  fillColor: Colors.white,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.black.withOpacity(.1))),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.black.withOpacity(.1))),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text('How is your heart today?', style: ui(18, weight: FontWeight.w600, spacing: -0.2)),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -45,20 +62,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       selected: m == mood,
                       onSelected: (_) => setState(() => mood = m),
                       showCheckmark: false,
-                      labelStyle: ui(15, weight: FontWeight.w500, color: m == mood ? Colors.white : C.ink),
+                      labelStyle: ui(14, weight: FontWeight.w500, color: m == mood ? Colors.white : C.ink),
                       selectedColor: C.emerald,
                       backgroundColor: Colors.white,
                       side: BorderSide(color: Colors.black.withOpacity(.06)),
                       shape: const StadiumBorder(),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
                     ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Text("We'll open on verses that speak to how you feel. Change it any time.",
-                  style: ui(13, color: C.grey, height: 1.45)),
-              const Spacer(),
-              PrimaryButton(label: 'Continue', onTap: () => Store.instance.finishOnboarding(mood)),
+                  style: ui(12.5, color: C.grey, height: 1.4)),
+              const SizedBox(height: 28),
+              PrimaryButton(
+                label: 'Continue',
+                onTap: () => Store.instance.finishOnboarding(mood, nameCtrl.text),
+              ),
               const SizedBox(height: 14),
               Center(
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -67,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Text('No ads on verses. Your data stays on your phone.', style: ui(12, color: C.grey)),
                 ]),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
           ),
         ),
