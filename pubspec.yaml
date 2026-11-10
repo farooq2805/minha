@@ -1,0 +1,23 @@
+name: minha
+description: Minha - the Quran, one verse a day.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^6.2.1
+  http: ^1.2.2
+  just_audio: ^0.9.40
+  shared_preferences: ^2.3.2
+  adhan: ^2.0.0
+  share_plus: ^10.0.2
+  path_provider: ^2.1.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/share/

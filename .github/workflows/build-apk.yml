@@ -1,0 +1,58 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android project
+        run: |
+          flutter create --org app.minha --project-name minha --platforms android .
+          rm -rf test
+          M=android/app/src/main/AndroidManifest.xml
+          grep -q 'android.permission.INTERNET' $M || sed -i 's#<manifest xmlns:android="http://schemas.android.com/apk/res/android">#&\n    <uses-permission android:name="android.permission.INTERNET"/>#' $M
+          sed -i 's#android:label="minha"#android:label="Minha"#' $M
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp assets/icon/ic_launcher_$d.png android/app/src/main/res/mipmap-$d/ic_launcher.png
+          done
+          cat $M
+
+      - run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Rename APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk minha-${{ github.run_number }}.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minha-apk
+          path: minha-${{ github.run_number }}.apk
+
+      - name: Publish release for phone download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Minha test build ${{ github.run_number }}
+          prerelease: true
+          files: minha-${{ github.run_number }}.apk
