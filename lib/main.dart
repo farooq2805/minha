@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'analytics/analytics_service.dart';
+import 'analytics/event_types.dart';
 import 'screens/ask.dart';
 import 'screens/feed.dart';
 import 'screens/journey.dart';
@@ -22,6 +24,7 @@ Future<void> main() async {
         ),
       );
   await Store.instance.load();
+  await AnalyticsService.instance.init();
   runApp(const MinhaApp());
 }
 
@@ -51,6 +54,14 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   int tab = 0;
 
+  void _onTabChanged(int i) {
+    setState(() => tab = i);
+    const screens = ['today_feed', 'quran_reader', 'ask_minha', 'journey_dashboard'];
+    AnalyticsService.instance.track(AnalyticsEvents.screenView, properties: {
+      'screen_name': screens[i],
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final dark = tab == 0;
@@ -58,7 +69,7 @@ class _HomeState extends State<Home> {
     return Scaffold(
       extendBody: true,
       body: IndexedStack(index: tab, children: const [FeedScreen(), QuranScreen(), AskScreen(), JourneyScreen()]),
-      bottomNavigationBar: _TabBar(index: tab, dark: dark, onTap: (i) => setState(() => tab = i)),
+      bottomNavigationBar: _TabBar(index: tab, dark: dark, onTap: _onTabChanged),
     );
   }
 }

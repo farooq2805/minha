@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 
+import '../analytics/analytics_service.dart';
+import '../analytics/event_types.dart';
 import '../store.dart';
 import '../theme.dart';
 import 'quran.dart';
@@ -231,7 +233,18 @@ class _NamazTrackerCard extends StatelessWidget {
                 name: p.$1,
                 time: _fmt(p.$2),
                 done: s.isPrayerDone(p.$3),
-                onTap: () => s.togglePrayer(p.$3),
+                onTap: () {
+                  s.togglePrayer(p.$3);
+                  if (s.isPrayerDone(p.$3)) {
+                    AnalyticsService.instance.track(
+                      AnalyticsEvents.prayerCompleted,
+                      properties: {
+                        'prayer_name': p.$3,
+                        'completed_today': s.completedPrayersCount(),
+                      },
+                    );
+                  }
+                },
               ),
           ],
         ),

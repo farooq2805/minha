@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../analytics/analytics_service.dart';
+import '../analytics/event_types.dart';
 import '../data.dart';
 import '../store.dart';
 import '../theme.dart';
@@ -122,8 +124,20 @@ class _ReaderScreenState extends State<ReaderScreen> {
   @override
   void initState() {
     super.initState();
-    // Record reading activity
     Store.instance.bump('read');
+    AnalyticsService.instance.track(AnalyticsEvents.readingSessionStarted, properties: {
+      'surah_number': widget.surah,
+      'surah_name': widget.title,
+    });
+  }
+
+  @override
+  void dispose() {
+    AnalyticsService.instance.track(AnalyticsEvents.readingSessionCompleted, properties: {
+      'surah_number': widget.surah,
+    });
+    scrollController.dispose();
+    super.dispose();
   }
 
   @override

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
 
+import '../analytics/analytics_service.dart';
+import '../analytics/event_types.dart';
 import '../store.dart';
 import '../theme.dart';
 import 'quran.dart';
@@ -35,6 +37,7 @@ class _RamadanScreenState extends State<RamadanScreen> {
   @override
   void initState() {
     super.initState();
+    AnalyticsService.instance.track(AnalyticsEvents.ramadanDashboardOpened);
     timer = Timer.periodic(const Duration(seconds: 1), (_) => setState(() => now = DateTime.now()));
   }
 

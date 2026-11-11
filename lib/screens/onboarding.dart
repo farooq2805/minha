@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../analytics/analytics_service.dart';
+import '../analytics/event_types.dart';
 import '../data.dart';
 import '../store.dart';
 import '../theme.dart';
@@ -13,6 +15,18 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   String mood = 'Anxious';
   final nameCtrl = TextEditingController(text: 'Farooq');
+
+  @override
+  void initState() {
+    super.initState();
+    AnalyticsService.instance.track(AnalyticsEvents.onboardingStarted);
+  }
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +91,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               const SizedBox(height: 28),
               PrimaryButton(
                 label: 'Continue',
-                onTap: () => Store.instance.finishOnboarding(mood, nameCtrl.text),
+                onTap: () {
+                  AnalyticsService.instance.track(
+                    AnalyticsEvents.onboardingCompleted,
+                    properties: {
+                      'has_name': nameCtrl.text.trim().isNotEmpty,
+                      'initial_mood': mood,
+                    },
+                  );
+                  Store.instance.finishOnboarding(mood, nameCtrl.text);
+                },
               ),
               const SizedBox(height: 14),
               Center(

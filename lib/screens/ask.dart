@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../analytics/ai_cost_tracker.dart';
+import '../analytics/analytics_service.dart';
+import '../analytics/event_types.dart';
 import '../data.dart';
 import '../store.dart';
 import '../theme.dart';
@@ -66,6 +69,15 @@ Guidelines:
       isLoading = true;
     });
 
+    final topic = matchTopic(q);
+    final stopwatch = Stopwatch()..start();
+
+    // Track AI question submitted without PII or sensitive raw prompt
+    AnalyticsService.instance.track(AnalyticsEvents.aiQuestionSubmitted, properties: {
+      'category': topic.label,
+      'has_api_key': s.geminiApiKey.isNotEmpty,
+    });
+
     // Check if user has Gemini API key configured, otherwise use smart offline fallback + Quran match
     final apiKey = s.geminiApiKey;
     if (apiKey.isNotEmpty) {
@@ -89,6 +101,9 @@ Guidelines:
           }),
         ).timeout(const Duration(seconds: 15));
 
+        stopwatch.stop();
+        final latencyMs = stopwatch.elapsedMilliseconds;
+
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body) as Map<String, dynamic>;
           final candidates = data['candidates'] as List<dynamic>?;
@@ -96,19 +111,54 @@ Guidelines:
             final content = candidates[0]['content'] as Map<String, dynamic>?;
             final parts = content?['parts'] as List<dynamic>?;
             final text = parts?[0]['text'] as String? ?? '';
-            
-            final topic = matchTopic(q);
+
+            final usage = data['usageMetadata'] as Map<String, dynamic>?;
+            final inTokens = (usage?['promptTokenCount'] as int?) ?? (q.length ~/ 3.5);
+            final outTokens = (usage?['candidatesTokenCount'] as int?) ?? (text.length ~/ 3.5);
+            final hasCitations = text.contains(':') || text.toLowerCase().contains('surah');
+
+            // Record into central AI Cost Ledger
+            await AiCostTracker.instance.recordRequest(
+              model: 'gemini-1.5-flash',
+              inputTokens: inTokens,
+              outputTokens: outTokens,
+              latencyMs: latencyMs,
+              success: true,
+              hadCitations: hasCitations,
+              topicCategory: topic.label,
+            );
+
+            AnalyticsService.instance.track(AnalyticsEvents.aiResponseGenerated, properties: {
+              'model': 'gemini-1.5-flash',
+              'input_tokens': inTokens,
+              'output_tokens': outTokens,
+              'latency_ms': latencyMs,
+              'had_citations': hasCitations,
+            });
+
+            if (AiCostTracker.instance.isDailyBudgetExceeded()) {
+              AnalyticsService.instance.track(AnalyticsEvents.aiBudgetAlert, properties: {
+                'today_cost_usd': AiCostTracker.instance.getTodayCost(),
+              });
+            }
+
             _addMessage(q, text, topic.verses);
             return;
           }
+        } else {
+          AnalyticsService.instance.track(AnalyticsEvents.aiResponseFailed, properties: {
+            'status_code': res.statusCode,
+          });
         }
-      } catch (_) {
-        // Fallback to local intelligent response below
+      } catch (e) {
+        stopwatch.stop();
+        AnalyticsService.instance.track(AnalyticsEvents.aiResponseFailed, properties: {
+          'error_type': e.runtimeType.toString(),
+        });
       }
     }
 
     // Fallback: Smart local knowledge response with Quran citations & report
-    final topic = matchTopic(q);
     final fallbackAnswer = _generateLocalCompanionAnswer(q, topic);
     _addMessage(q, fallbackAnswer.$1, topic.verses, report: fallbackAnswer.$2, dua: fallbackAnswer.$3);
   }

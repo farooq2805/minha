@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../analytics/analytics_service.dart';
 import '../data.dart';
 import '../store.dart';
 import '../theme.dart';
+import 'admin_dashboard.dart';
 import 'journey.dart';
 
 void showSettings(BuildContext context) {
@@ -193,6 +195,46 @@ class SettingsSheet extends StatelessWidget {
                     trailing: s.translation == t.id ? const Icon(Icons.check_rounded, color: C.emerald) : null,
                     onTap: () => s.setTranslation(t.id),
                   ),
+              ]),
+            ),
+            const SizedBox(height: 20),
+
+            // Analytics & Privacy
+            _label('Privacy & Diagnostics'),
+            Group(
+              padding: EdgeInsets.zero,
+              child: Column(children: [
+                SwitchListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  title: Text('Anonymous Telemetry', style: ui(16)),
+                  subtitle: Text('Help improve Minha with zero-PII usage statistics', style: ui(12.5, color: C.grey)),
+                  value: AnalyticsService.instance.trackingEnabled,
+                  activeTrackColor: const Color(0xFF34C759),
+                  onChanged: (val) {
+                    AnalyticsService.instance.setTrackingEnabled(val);
+                  },
+                ),
+              ]),
+            ),
+            const SizedBox(height: 20),
+
+            // Developer / App Owner BI Dashboard
+            _label('App Owner & Business Intelligence'),
+            Group(
+              padding: EdgeInsets.zero,
+              child: Column(children: [
+                ListTile(
+                  leading: const Icon(Icons.analytics_outlined, color: C.emerald),
+                  title: Text('Executive BI & Health Dashboard', style: ui(16)),
+                  subtitle: Text('DAU, AI cost accounting, Crash-free % & BigQuery export', style: ui(12.5, color: C.grey)),
+                  trailing: const Icon(Icons.chevron_right_rounded),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+                    );
+                  },
+                ),
               ]),
             ),
             const SizedBox(height: 22),

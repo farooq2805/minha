@@ -1,0 +1,19 @@
+{
+  "name": "minha-telemetry-backend",
+  "version": "1.0.0",
+  "description": "Production Ingestion & BigQuery Streaming Service for Minha App",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "@google-cloud/bigquery": "^7.9.2",
+    "@google-cloud/logging": "^11.2.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
