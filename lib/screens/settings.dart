@@ -208,7 +208,7 @@ class SettingsSheet extends StatelessWidget {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   title: Text('Anonymous Telemetry', style: ui(16)),
                   subtitle: Text('Help improve Minha with zero-PII usage statistics', style: ui(12.5, color: C.grey)),
-                  value: AnalyticsService.instance.trackingEnabled,
+                  value: AnalyticsService.instance.isTrackingEnabled,
                   activeTrackColor: const Color(0xFF34C759),
                   onChanged: (val) {
                     AnalyticsService.instance.setTrackingEnabled(val);

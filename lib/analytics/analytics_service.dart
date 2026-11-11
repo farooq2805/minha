@@ -237,11 +237,11 @@ class AnalyticsService extends ChangeNotifier {
   }
 
   String _resolvePlatform() {
+    if (kIsWeb) return 'web';
     try {
       if (Platform.isAndroid) return 'android';
       if (Platform.isIOS) return 'ios';
       if (Platform.isMacOS) return 'macos';
-      if (Platform.isWeb) return 'web';
     } catch (_) {}
     return 'unknown';
   }
@@ -252,6 +252,7 @@ class AnalyticsService extends ChangeNotifier {
     return 'ev_${now.toRadixString(16)}_$rand';
   }
 
+  bool get trackingEnabled => isTrackingEnabled;
   String get anonymousInstallId => _anonymousInstallId;
   String get sessionId => _sessionId;
   int get queuedEventCount => _eventQueue.length;
