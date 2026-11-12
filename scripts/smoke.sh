@@ -70,6 +70,12 @@ tap_label "Ramadan"; sleep 6
 shot 13_ramadan
 scroll_up
 shot 14_ramadan_more
+adb shell input keyevent 4; sleep 3
+tap_label "Settings"; sleep 4
+shot 15_settings
+scroll_up
+shot 16_settings_more
+adb shell input keyevent 4; sleep 2
 adb shell pidof app.minha.minha > shots/pid.txt || echo "APP NOT RUNNING" > shots/pid.txt
 adb logcat -d > shots/logcat.txt
 grep -iE "E/flutter|FATAL|AndroidRuntime" shots/logcat.txt | tail -80

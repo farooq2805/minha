@@ -7,10 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
-import '../data.dart';
-import '../store.dart';
-import '../theme.dart';
-import 'settings.dart';
+import 'package:minha/features/quran/data/quran_api.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
+import 'package:minha/features/settings/ui/settings_screen.dart';
 
 class CardStyle {
   const CardStyle(this.name, this.background, this.text, this.sub, {this.gradient});

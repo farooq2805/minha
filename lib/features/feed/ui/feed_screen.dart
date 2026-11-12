@@ -1,16 +1,14 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:minha/core/router/routes.dart';
 
-import '../data.dart';
-import '../store.dart';
-import '../theme.dart';
-import 'ask.dart';
-import 'meaning.dart';
-import 'ramadan.dart';
-import 'saved.dart';
-import 'settings.dart';
-import 'share.dart';
+import 'package:minha/features/quran/data/quran_api.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
+import 'package:minha/features/meaning/ui/meaning_sheet.dart';
+import 'package:minha/features/settings/ui/settings_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -82,8 +80,8 @@ class _TopBar extends StatelessWidget {
               padding: const EdgeInsets.all(3),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 _seg('For You', true, () {}),
-                _seg('Ramadan', false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RamadanScreen()))),
-                _seg('Saved', false, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SavedScreen()))),
+                _seg('Ramadan', false, () => context.push(Routes.ramadan)),
+                _seg('Saved', false, () => context.push(Routes.saved)),
               ]),
             ),
             const Spacer(),
@@ -104,9 +102,13 @@ class _TopBar extends StatelessWidget {
               ]),
             ),
             const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => showSettings(context),
-              child: const _Glass(padding: EdgeInsets.all(8), child: Icon(Icons.tune_rounded, size: 18, color: Colors.white)),
+            Semantics(
+              button: true,
+              label: 'Settings',
+              child: GestureDetector(
+                onTap: () => showSettings(context),
+                child: const _Glass(padding: EdgeInsets.all(13), child: Icon(Icons.tune_rounded, size: 18, color: Colors.white)),
+              ),
             ),
           ],
         ),
@@ -222,9 +224,9 @@ class _VersePageState extends State<VersePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _Action(icon: s.isSaved(v.key) ? Icons.bookmark_rounded : Icons.bookmark_border_rounded, label: s.isSaved(v.key) ? 'Saved' : 'Save', onTap: () => s.toggleSave(v.key)),
-                      _Action(icon: Icons.ios_share_rounded, label: 'Share', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ShareScreen(verse: v)))),
+                      _Action(icon: Icons.ios_share_rounded, label: 'Share', onTap: () => context.push(Routes.share, extra: v)),
                       _Action(icon: Icons.translate_rounded, label: 'Meaning', onTap: () => showMeaning(context, v)),
-                      _Action(icon: Icons.chat_bubble_outline_rounded, label: 'Ask', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AskScreen(standalone: true)))),
+                      _Action(icon: Icons.chat_bubble_outline_rounded, label: 'Ask', onTap: () => context.push(Routes.askChat)),
                     ],
                   ),
                   const SizedBox(height: 16),

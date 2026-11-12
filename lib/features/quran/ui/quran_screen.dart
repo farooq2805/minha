@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:minha/core/router/routes.dart';
 
-import '../analytics/analytics_service.dart';
-import '../analytics/event_types.dart';
-import '../data.dart';
-import '../store.dart';
-import '../theme.dart';
-import 'meaning.dart';
-import 'share.dart';
+import 'package:minha/core/analytics/analytics_service.dart';
+import 'package:minha/core/analytics/event_types.dart';
+import 'package:minha/features/quran/data/quran_api.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
+import 'package:minha/features/meaning/ui/meaning_sheet.dart';
 
 class QuranScreen extends StatefulWidget {
   const QuranScreen({super.key});
@@ -72,7 +73,7 @@ class _QuranScreenState extends State<QuranScreen> {
                       child: Column(children: [
                         for (final s in snap.data!.where((s) => query.isEmpty || s.name.toLowerCase().contains(query) || s.meaning.toLowerCase().contains(query) || '${s.number}' == query))
                           InkWell(
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReaderScreen(surah: s.number, title: s.name))),
+                            onTap: () => context.push(Routes.reader(s.number, title: s.name)),
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: C.hair, width: .5))),
@@ -251,7 +252,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
           }),
           ListTile(leading: const Icon(Icons.ios_share_rounded), title: const Text('Share as card'), onTap: () {
             Navigator.pop(ctx);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => ShareScreen(verse: v)));
+            context.push(Routes.share, extra: v);
           }),
           ListTile(
             leading: Icon(Store.instance.isSaved(v.key) ? Icons.bookmark_rounded : Icons.bookmark_border_rounded),

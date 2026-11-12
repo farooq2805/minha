@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../analytics/analytics_service.dart';
-import '../data.dart';
-import '../store.dart';
-import '../theme.dart';
-import 'admin_dashboard.dart';
-import 'journey.dart';
+import 'package:minha/core/analytics/analytics_service.dart';
+import 'package:minha/features/quran/data/quran_api.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
+import 'package:minha/features/journey/ui/journey_screen.dart';
 
 void showSettings(BuildContext context) {
   showModalBottomSheet(
@@ -38,33 +37,6 @@ Future<void> editName(BuildContext context) async {
   );
   if (result != null && result.trim().isNotEmpty) {
     await Store.instance.setName(result.trim());
-  }
-}
-
-Future<void> editGeminiKey(BuildContext context) async {
-  final ctrl = TextEditingController(text: Store.instance.geminiApiKey);
-  final result = await showDialog<String>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Google Gemini API Key'),
-      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Get a free key from Google AI Studio. Enables smart conversational answers in Ask.',
-            style: ui(13.5, color: C.grey)),
-        const SizedBox(height: 12),
-        TextField(
-          controller: ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'AIzaSy...', border: OutlineInputBorder(), isDense: true),
-        ),
-      ]),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-        TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text), child: const Text('Save')),
-      ],
-    ),
-  );
-  if (result != null) {
-    await Store.instance.setGeminiApiKey(result.trim());
   }
 }
 
@@ -145,25 +117,6 @@ class SettingsSheet extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // AI Companion section
-            _label('AI Companion (Ask)'),
-            Group(
-              padding: EdgeInsets.zero,
-              child: Column(children: [
-                ListTile(
-                  leading: const Icon(Icons.auto_awesome_rounded, color: C.emerald),
-                  title: Text('Google Gemini API (Free Tier)', style: ui(16)),
-                  subtitle: Text(
-                    s.geminiApiKey.isEmpty ? 'Not connected · tap to add free key' : 'Key connected (AIzaSy...)',
-                    style: ui(13, color: s.geminiApiKey.isEmpty ? const Color(0xFFE28B00) : C.emerald),
-                  ),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => editGeminiKey(context),
-                ),
-              ]),
-            ),
-            const SizedBox(height: 20),
-
             // Mood Section
             _label('How is your heart today?'),
             Group(
@@ -217,30 +170,8 @@ class SettingsSheet extends StatelessWidget {
               ]),
             ),
             const SizedBox(height: 20),
-
-            // Developer / App Owner BI Dashboard
-            _label('App Owner & Business Intelligence'),
-            Group(
-              padding: EdgeInsets.zero,
-              child: Column(children: [
-                ListTile(
-                  leading: const Icon(Icons.analytics_outlined, color: C.emerald),
-                  title: Text('Executive BI & Health Dashboard', style: ui(16)),
-                  subtitle: Text('DAU, AI cost accounting, Crash-free % & BigQuery export', style: ui(12.5, color: C.grey)),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
-                    );
-                  },
-                ),
-              ]),
-            ),
-            const SizedBox(height: 22),
-
             Text(
-              'Minha · Version 0.1.0\nQuran text: Tanzil via alquran.cloud. Recitations: Mishary Alafasy. Prayer times: Adhan by Batoul Apps. AI: Google Gemini.',
+              'Minha · Version 0.2.0\nQuran text: Tanzil via alquran.cloud. Recitations: Mishary Alafasy. Prayer times: Adhan by Batoul Apps.',
               style: ui(12, color: C.grey, height: 1.45),
             ),
           ],

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:minha/core/router/routes.dart';
 
-import '../data.dart';
-import '../store.dart';
-import '../theme.dart';
-import 'share.dart';
+import 'package:minha/features/quran/data/quran_api.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
 
 class SavedScreen extends StatelessWidget {
   const SavedScreen({super.key});
@@ -68,7 +69,7 @@ class VerseCard extends StatelessWidget {
               IconButton(
                 tooltip: 'Share',
                 visualDensity: VisualDensity.compact,
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ShareScreen(verse: v))),
+                onPressed: () => context.push(Routes.share, extra: v),
                 icon: const Icon(Icons.ios_share_rounded, color: C.emerald),
               ),
             ]),

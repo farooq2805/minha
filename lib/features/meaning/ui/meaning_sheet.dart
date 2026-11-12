@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:minha/core/router/routes.dart';
 
-import '../data.dart';
-import '../store.dart';
-import '../theme.dart';
-import 'quran.dart';
+import 'package:minha/features/quran/data/quran_api.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
 
 void showMeaning(BuildContext context, Verse v) {
   showModalBottomSheet(
@@ -80,9 +81,10 @@ class _MeaningSheetState extends State<MeaningSheet> {
               label: 'Open surah',
               onTap: () {
                 final n = int.parse(v.key.split(':').first);
+                final router = GoRouter.of(context);
                 final nav = Navigator.of(context);
                 nav.pop();
-                nav.push(MaterialPageRoute(builder: (_) => ReaderScreen(surah: n, title: v.surahName, highlight: v.key)));
+                router.push(Routes.reader(n, title: v.surahName, highlight: v.key));
               },
             ),
           ),

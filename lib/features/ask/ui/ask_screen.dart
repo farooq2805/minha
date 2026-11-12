@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import '../analytics/ai_cost_tracker.dart';
-import '../analytics/analytics_service.dart';
-import '../analytics/event_types.dart';
-import '../data.dart';
-import '../store.dart';
-import '../theme.dart';
-import 'saved.dart';
+import 'package:minha/core/analytics/ai_cost_tracker.dart';
+import 'package:minha/core/analytics/analytics_service.dart';
+import 'package:minha/core/analytics/event_types.dart';
+import 'package:minha/features/quran/data/quran_api.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
+import 'package:minha/features/saved/ui/saved_screen.dart';
 
 class AskScreen extends StatefulWidget {
   const AskScreen({super.key, this.standalone = false});

@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:minha/core/router/routes.dart';
 
-import '../analytics/analytics_service.dart';
-import '../analytics/event_types.dart';
-import '../store.dart';
-import '../theme.dart';
-import 'quran.dart';
+import 'package:minha/core/analytics/analytics_service.dart';
+import 'package:minha/core/analytics/event_types.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
 
 PrayerTimes _times(DateTime day) => Store.instance.getPrayerTimes(day);
 
@@ -79,7 +80,7 @@ class _RamadanScreenState extends State<RamadanScreen> {
               ),
               const SizedBox(height: 14),
               GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IftarScreen())),
+                onTap: () => context.push(Routes.iftar()),
                 child: Container(
                   padding: const EdgeInsets.all(18),
                   decoration: BoxDecoration(
@@ -141,9 +142,9 @@ class _RamadanScreenState extends State<RamadanScreen> {
                 crossAxisSpacing: 10,
                 childAspectRatio: 1.45,
                 children: [
-                  _tile(Icons.nightlight_outlined, 'Duas for fasting', 'Iftar and Laylat al-Qadr', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IftarScreen()))),
-                  _tile(Icons.menu_book_outlined, 'Khatam plan', '20 pages a day for 30 days', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuranScreen()))),
-                  _tile(Icons.auto_awesome_outlined, 'Last 10 nights', 'Qadr dua and night reminders', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const IftarScreen(startOnQadr: true)))),
+                  _tile(Icons.nightlight_outlined, 'Duas for fasting', 'Iftar and Laylat al-Qadr', () => context.push(Routes.iftar())),
+                  _tile(Icons.menu_book_outlined, 'Khatam plan', '20 pages a day for 30 days', () => context.go(Routes.quran)),
+                  _tile(Icons.auto_awesome_outlined, 'Last 10 nights', 'Qadr dua and night reminders', () => context.push(Routes.iftar(qadr: true))),
                   _tile(Icons.volunteer_activism_outlined, 'Zakat and sadaqah', 'Calculator coming next', null),
                 ],
               ),
@@ -279,7 +280,7 @@ class _IftarScreenState extends State<IftarScreen> {
                   border: Border.all(color: Colors.white.withOpacity(.2), width: .5),
                 ),
                 child: Column(children: [
-                  Text(d.arabic, textAlign: TextAlign.center, textDirection: TextDirection.rtl, style: arabic(26, color: Colors.white)),
+                  Text(d.arabic, textAlign: TextAlign.center, textDirection: TextDirection.rtl, style: naskh(26, color: Colors.white)),
                   const SizedBox(height: 12),
                   Text(d.transliteration, textAlign: TextAlign.center, style: ui(14.5, color: C.gold, height: 1.5).copyWith(fontStyle: FontStyle.italic)),
                   const SizedBox(height: 10),

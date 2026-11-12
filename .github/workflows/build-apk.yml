@@ -1,8 +1,11 @@
 name: Build Android APK
 
+# Every branch is analysed, tested, built and walked through on the emulator.
+# Only main publishes a GitHub Release and the apk branch.
 on:
   push:
-    branches: [main]
+    branches-ignore: [apk, ci-log, ci-shots]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -11,6 +14,8 @@ permissions:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    env:
+      PUBLISH: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -25,10 +30,28 @@ jobs:
           cache: true
 
       - name: Generate Android project
+        run: flutter create --org app.minha --project-name minha --platforms android .
+
+      - name: Release keystore from secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          flutter create --org app.minha --project-name minha --platforms android .
-          rm -rf test
-          python3 scripts/patch_android.py
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::warning::KEYSTORE_BASE64 / KEYSTORE_PASSWORD secrets not set. The APK is signed with a debug key."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/upload-keystore.jks
+          {
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyPassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=${KEY_ALIAS:-upload}"
+            echo "storeFile=upload-keystore.jks"
+          } > android/key.properties
+
+      - name: Patch Android project
+        run: python3 scripts/patch_android.py
 
       - run: flutter pub get
 
@@ -36,18 +59,23 @@ jobs:
         run: |
           flutter analyze > /tmp/analyze.log 2>&1 || true
           cat /tmp/analyze.log
-          git config user.name "minha-ci"
-          git config user.email "ci@minha.app"
-          git checkout -B ci-log
-          cp /tmp/analyze.log analyze.log
-          git add analyze.log
-          git commit -m "Analyze log" || true
-          git push -f origin ci-log || true
-          git checkout main
+          if [ "$PUBLISH" = "true" ]; then
+            git config user.name "minha-ci"
+            git config user.email "ci@minha.app"
+            git checkout -B ci-log
+            cp /tmp/analyze.log analyze.log
+            git add analyze.log
+            git commit -m "Analyze log" || true
+            git push -f origin ci-log || true
+            git checkout --detach "$GITHUB_SHA"
+          fi
           if grep -q "error •" /tmp/analyze.log; then
             echo "Analyze failed with errors!"
             exit 1
           fi
+
+      - name: Run tests
+        run: flutter test
 
       - name: Build release APK
         run: flutter build apk --release
@@ -61,6 +89,7 @@ jobs:
           path: minha-${{ github.run_number }}.apk
 
       - name: Publish release for phone download
+        if: env.PUBLISH == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
@@ -69,6 +98,7 @@ jobs:
           files: minha-${{ github.run_number }}.apk
 
       - name: Push APK to apk branch
+        if: env.PUBLISH == 'true'
         run: |
           mkdir -p /tmp/apk && cp minha-${{ github.run_number }}.apk /tmp/apk/minha-latest.apk
           git config user.name "minha-ci"
@@ -103,10 +133,17 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: bash scripts/smoke.sh
-      - name: Save screenshots and log to ci-shots branch
+      - name: Upload screenshots
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-shots
+          path: shots/
+      - name: Save screenshots and log to ci-shots branch
+        if: always() && github.event_name != 'pull_request'
         run: |
           mkdir -p /tmp/out && cp -r shots/* /tmp/out/ || true
+          echo "${GITHUB_REF_NAME} @ ${GITHUB_SHA}" > /tmp/out/build.txt
           git config user.name "minha-ci"
           git config user.email "ci@minha.app"
           git checkout --orphan ci-shots
@@ -114,5 +151,5 @@ jobs:
           cp -r /tmp/out/* . || true
           rm -f minha-*.apk
           git add -A
-          git commit -m "Emulator run ${{ github.run_number }}" || true
+          git commit -m "Emulator run ${{ github.run_number }} (${GITHUB_REF_NAME})" || true
           git push -f origin ci-shots

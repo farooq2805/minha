@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../analytics/analytics_service.dart';
-import '../analytics/event_types.dart';
-import '../data.dart';
-import '../store.dart';
-import '../theme.dart';
+import 'package:minha/core/analytics/analytics_service.dart';
+import 'package:minha/core/analytics/event_types.dart';
+import 'package:minha/features/quran/data/quran_api.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});

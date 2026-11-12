@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'data.dart';
+import 'package:minha/features/quran/data/quran_api.dart';
 
 String today([DateTime? dt]) {
   final n = dt ?? DateTime.now();

@@ -2,13 +2,13 @@ import 'dart:math';
 
 import 'package:adhan/adhan.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:minha/core/router/routes.dart';
 
-import '../analytics/analytics_service.dart';
-import '../analytics/event_types.dart';
-import '../store.dart';
-import '../theme.dart';
-import 'quran.dart';
-import 'ramadan.dart';
+import 'package:minha/core/analytics/analytics_service.dart';
+import 'package:minha/core/analytics/event_types.dart';
+import 'package:minha/core/services/store.dart';
+import 'package:minha/core/theme/theme.dart';
 
 const ringColors = {'read': C.emerald, 'listen': Color(0xFFC4964F), 'reflect': Color(0xFF3E7CB1)};
 const ringLabels = {'read': 'Read', 'listen': 'Listen', 'reflect': 'Reflect'};
@@ -92,7 +92,7 @@ class JourneyScreen extends StatelessWidget {
 
                 // --- RAMADAN CARD ---
                 GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RamadanScreen())),
+                  onTap: () => context.push(Routes.ramadan),
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -359,12 +359,7 @@ class _QuranProgressCard extends StatelessWidget {
                 final surahNum = s.lastReadSurah ?? 1;
                 final surahName = s.lastReadSurahName ?? 'Al-Fatihah';
                 final highlightKey = hasLastRead ? '${s.lastReadSurah}:${s.lastReadAyah}' : null;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ReaderScreen(surah: surahNum, title: surahName, highlight: highlightKey),
-                  ),
-                );
+                context.push(Routes.reader(surahNum, title: surahName, highlight: highlightKey));
               },
               child: Text(hasLastRead ? 'Resume' : 'Read', style: ui(13, weight: FontWeight.w600, color: Colors.white)),
             ),

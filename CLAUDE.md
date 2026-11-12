@@ -35,7 +35,10 @@ flutter test
 flutter run                            # phone with USB debugging
 flutter build apk --release
 ```
-CI (`.github/workflows/build-apk.yml`) on every push to `main`:
+CI (`.github/workflows/build-apk.yml`) on every push to any branch: analyze, `flutter test`, build APK and the
+emulator walkthrough. Only `main` also publishes (below). Release signing uses the `KEYSTORE_BASE64`,
+`KEYSTORE_PASSWORD` and optional `KEY_ALIAS` (default `upload`) secrets; without them the APK is debug-signed.
+On `main`:
 analyze, build APK, publish a GitHub Release and the `apk` branch (`minha-latest.apk`),
 then install it on an Android emulator and run `scripts/smoke.sh`. That script taps through the app by
 on-screen labels and pushes screenshots plus logcat to the `ci-shots` branch.
@@ -45,3 +48,12 @@ on-screen labels and pushes screenshots plus logcat to the `ci-shots` branch.
 - Design canvas (all screens, logo, colours): https://claude.ai/artifact/Mq7H4hMpgi4s86JeNPPsTh
 - Research hub (market, ASO, growth, Ramadan, ads, sharing): https://claude.ai/artifact/XWDuhx5rpN2ryV87URvNx8
 - Latest emulator preview and spec audit: https://claude.ai/artifact/14i2U7CUG8kh7ykYWp6prE
+
+## Code layout (Phase 0)
+- `lib/core/theme/`: design system. Import `package:minha/core/theme/theme.dart` only. Fonts are bundled
+  in `assets/fonts` (never `google_fonts`): `ui()` Inter Tight, `serif()` Newsreader, `arabic()` Amiri Quran
+  for Quran text only, `naskh()` Noto Naskh Arabic for duas and other Arabic.
+- `lib/core/router/`: go_router. Every location is in `routes.dart`; navigate with `context.push(Routes.x)`.
+- `lib/core/providers.dart`: Riverpod providers. Screens move from `Store.instance` to `ref.watch` as each
+  feature is rebuilt.
+- `lib/features/<feature>/{data,domain,ui}`.
